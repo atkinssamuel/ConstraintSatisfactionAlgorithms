@@ -120,7 +120,15 @@ class QueensTableConstraint(TableConstraint):
     #the existing function signatures.
     def __init__(self, name, qi, qj, i, j):
         self._name = "Queen_" + name
-        util.raiseNotDefined()
+        self.i = i
+        self.j = j
+        allowablePos = []
+        for qiElement in qi.domain():
+            for qjElement in qj.domain():
+                if abs(qiElement - qjElement) != abs(self.i - self.j):
+                    if qiElement != qjElement:
+                        allowablePos.append([qiElement, qjElement])
+        TableConstraint.__init__(self, name,  [qi, qj], allowablePos)
 
 
 class NeqConstraint(Constraint):
@@ -281,4 +289,36 @@ class NValuesConstraint(Constraint):
                  there are other ways as well)
         '''
         util.raiseNotDefined()
-        
+
+if __name__ == "__main__":
+    model = 'table'
+    n = 8
+
+    i = 0
+    dom = []
+    for i in range(n):
+        dom.append(i+1)
+
+    vars = []
+    for i in dom:
+        vars.append(Variable('Q{}'.format(i), dom))
+
+    cons = []
+
+    if model == 'alldiff':
+        util.raiseNotDefined()
+    else:
+        constructor = QueensTableConstraint if model == 'table' else QueensConstraint
+        for qi in range(len(dom)):
+            for qj in range(qi+1, len(dom)):
+                print(qi, "then", qj)
+                print(qi+1)
+                print(qj+1)
+                
+
+                #con = constructor("C(Q{},Q{})".format(qi+1,qj+1),
+                #                            vars[qi], vars[qj], qi+1, qj+1)
+                #cons.append(con)
+
+    #csp = CSP("{}-Queens".format(n), vars, cons)
+   

@@ -118,6 +118,7 @@ class QueensTableConstraint(TableConstraint):
     #your implementation for Question 1 goes
     #inside of this class body. You must not change
     #the existing function signatures.
+    # "Creates a table constraint to capture the queens table constraint" 
     def __init__(self, name, qi, qj, i, j):
         self._name = "Queen_" + name
         self.i = i
@@ -290,35 +291,4 @@ class NValuesConstraint(Constraint):
         '''
         util.raiseNotDefined()
 
-if __name__ == "__main__":
-    model = 'table'
-    n = 8
-
-    i = 0
-    dom = []
-    for i in range(n):
-        dom.append(i+1)
-
-    vars = []
-    for i in dom:
-        vars.append(Variable('Q{}'.format(i), dom))
-
-    cons = []
-
-    if model == 'alldiff':
-        util.raiseNotDefined()
-    else:
-        constructor = QueensTableConstraint if model == 'table' else QueensConstraint
-        for qi in range(len(dom)):
-            for qj in range(qi+1, len(dom)):
-                print(qi, "then", qj)
-                print(qi+1)
-                print(qj+1)
-                
-
-                #con = constructor("C(Q{},Q{})".format(qi+1,qj+1),
-                #                            vars[qi], vars[qj], qi+1, qj+1)
-                #cons.append(con)
-
-    #csp = CSP("{}-Queens".format(n), vars, cons)
    

@@ -28,7 +28,7 @@ def nQueens(n, model):
     cons = []
 
     if model == 'alldiff':
-        util.raiseNotDefined()
+        breakpoint()
     else:
         constructor = QueensTableConstraint if model == 'table' else QueensConstraint
         for qi in range(len(dom)):

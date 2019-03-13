@@ -28,7 +28,12 @@ def nQueens(n, model):
     cons = []
 
     if model == 'alldiff':
-        breakpoint()
+        for qi in range(len(dom)):
+            for qj in range(qi+1, len(dom)):
+                con1 = AllDiffConstraint("C(Q{},Q{})".format(qi+1,qj+1), [vars[qi], vars[qj]])
+                con2 = NeqConstraint("C(Q{},Q{})".format(qi+1,qj+1), [vars[qi], vars[qj]], qi+1, qj+1)
+                cons.append(con1)
+                cons.append(con2)
     else:
         constructor = QueensTableConstraint if model == 'table' else QueensConstraint
         for qi in range(len(dom)):

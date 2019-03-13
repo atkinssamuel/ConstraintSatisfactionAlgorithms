@@ -180,30 +180,34 @@ def FC(unAssignedVars, csp, allSolutions, trace):
     #Implementing handling of the trace parameter is optional
     #but it can be useful for debugging
     
-
-    ##################### Personal Notes: ##########################
     # Normally argument is "Level"
     # Arguments in this function are unAssignedVars, csp, allSolutions, trace
 
     solutions = []
-    # If all variables are assigned return with the solution(s)
+    # If all variables are assigned return with the solution
     if unAssignedVars.empty():
+
         for variable in csp.variables():
             solutions.append((variable, variable.getValue()))
+
         return [solutions]
+
     bt_search.nodesExplored += 1
     # Pick an unassigned variable
     variable = unAssignedVars.extract()
+
     # Loop through all possible values of the unassigned variable
     for value in variable.curDomain():
         variable.setValue(value)
         DWO = False
+
         #for each constraint C over V such that C has only one unassigned variable X in its scope
         for const in csp.constraintsOf(variable):
             if const.numUnassigned() == 1:
                 if FCCheck(const, variable, value) == "DWO":
                     DWO = True
                     break
+
         # All constraints were okay
         if DWO == False:
         # FC(Level + 1)
@@ -212,8 +216,10 @@ def FC(unAssignedVars, csp, allSolutions, trace):
                 variable.restoreValues(variable, value)
                 break
         variable.restoreValues(variable, value)
+
     variable.setValue(None)
     unAssignedVars.insert(variable)
+
     return solutions
 
 def GacEnforce(constraints, csp, reasonVar, reasonVal):
@@ -225,9 +231,9 @@ def GacEnforce(constraints, csp, reasonVar, reasonVal):
        Similar to FCCheck, reasonVar is an assigned variable with value reasonVal.
        The pruning of the values from the variables are due to reasonVar = reasonVal
     '''
-    #your implementation for Question 3 goes in this function body
-    #you must not change the function parameters
-    #ensure that you return one of "OK" or "DWO"
+    # your implementation for Question 3 goes in this function body
+    # you must not change the function parameters
+    # ensure that you return one of "OK" or "DWO"
 
     # Pseudocode: 
     # while GACQueue not empty
@@ -252,8 +258,10 @@ def GacEnforce(constraints, csp, reasonVar, reasonVal):
     while len(constraints) != 0:
         # Extract constraint
         const = constraints.pop(0)
+
         # for V := each member of scope(C)
         for variable in const.scope():
+
             # for d := CurDom[V]
             for value in variable.curDomain():
                 # Find an assignment A for all other variables in scope(C) 
@@ -264,9 +272,11 @@ def GacEnforce(constraints, csp, reasonVar, reasonVal):
                     # If the variable has no current domain that means DWO
                     if variable.curDomainSize() == 0:
                         return "DWO"
+
                     for check in csp.constraintsOf(variable):
                         if check != const and not check in constraints:
                             constraints.append(check)
+
     return "OK"
 
 def GAC(unAssignedVars, csp, allSolutions, trace):
@@ -311,14 +321,17 @@ def GAC(unAssignedVars, csp, allSolutions, trace):
     solutions = []
     # If all variables are assigned:
     if unAssignedVars.empty():
+
         for variable in csp.variables():
             solutions.append((variable, variable.getValue()))
+
         # Return solutions
         return [solutions]
 
     bt_search.nodesExplored += 1
     # Extract a variable:
     variable = unAssignedVars.extract()
+
     # For all of the values that the variable can adopt:
     for value in variable.curDomain():
         # Set the value of the variable to the current variable iteration
@@ -335,8 +348,10 @@ def GAC(unAssignedVars, csp, allSolutions, trace):
                 break
         # This line will immediately execute if there is a DWO
         variable.restoreValues(variable, value)
+
     variable.setValue(None)
     unAssignedVars.insert(variable)
+
     return solutions
 
 

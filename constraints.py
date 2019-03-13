@@ -119,16 +119,20 @@ class QueensTableConstraint(TableConstraint):
     #inside of this class body. You must not change
     #the existing function signatures.
     # "Creates a table constraint to capture the queens table constraint" 
+
     def __init__(self, name, qi, qj, i, j):
         self._name = "Queen_" + name
         self.i = i
         self.j = j
         allowablePos = []
+
         for qiElement in qi.domain():
+
             for qjElement in qj.domain():
                 if abs(qiElement - qjElement) != abs(self.i - self.j):
                     if qiElement != qjElement:
                         allowablePos.append([qiElement, qjElement])
+
         TableConstraint.__init__(self, name,  [qi, qj], allowablePos)
 
 
@@ -270,16 +274,23 @@ class NValuesConstraint(Constraint):
     #Question 5 you have to complete the implementation of
     #check() and hasSupport. You can change __init__ if you want
     #but do not change its parameters.
-
     def __init__(self, name, scope, required_values, lower_bound, upper_bound):
         Constraint.__init__(self,name, scope)
-        self._name = "NValues_" + name
-        self._required = required_values
         self._lb = lower_bound
         self._ub = upper_bound
+        self._name = "NValues_" + name
+        self._required = required_values
 
     def check(self):
-        util.raiseNotDefined()
+        assignedList = []
+
+        for variable in self.scope():
+            if variable.isAssigned():
+                if variable.getValue() in self._required:
+                    assignedList.append(variable.getValue())
+            
+        return (len(assignedList) >= self._lb) and (len(assignedList) <= self._ub)
+         
 
     def hasSupport(self, var, val):
         '''check if var=val has an extension to an assignment of the
@@ -288,7 +299,32 @@ class NValuesConstraint(Constraint):
            HINT: check the implementation of AllDiffConstraint.hasSupport
                  a similar approach is applicable here (but of course
                  there are other ways as well)
-        '''
-        util.raiseNotDefined()
 
-   
+           AllDiff implementation of hasSupport:
+           def valsNotEqual(l):
+                #tests a list of assignments which are pairs (var,val)
+                #to see if they can satisfy the all diff
+                vals = [val for (var, val) in l]
+                return len(set(vals)) == len(vals)
+           varsToAssign = self.scope()
+           varsToAssign.remove(var)
+           x = findvals(varsToAssign, [(var, val)], valsNotEqual, valsNotEqual)
+           return x'''
+
+        if var not in self.scope():
+            return True
+
+        def testValue(list):   
+            assignedList = []
+
+            for var, val in list:
+                if val in self._required:
+                    assignedList.append(val)
+
+            return (len(assignedList) >= self._lb) and (len(assignedList) <= self._ub)
+        
+        variables = self.scope()
+        variables.remove(var)
+        
+        return findvals(variables, [(var, val)], testValue)
+

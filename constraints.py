@@ -126,8 +126,10 @@ class QueensTableConstraint(TableConstraint):
         self.j = j
         allowablePos = []
 
+        # Looping through qi domain:
         for qiElement in qi.domain():
-
+               
+            # Lopping through qj domain:
             for qjElement in qj.domain():
                 if abs(qiElement - qjElement) != abs(self.i - self.j):
                     if qiElement != qjElement:
@@ -282,8 +284,10 @@ class NValuesConstraint(Constraint):
         self._required = required_values
 
     def check(self):
+        # Initializing:
         assignedList = []
 
+        # Looping through scope for variables:
         for variable in self.scope():
             if variable.isAssigned():
                 if variable.getValue() in self._required:

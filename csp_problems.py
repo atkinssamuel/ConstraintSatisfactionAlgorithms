@@ -3,6 +3,7 @@ from constraints import *
 from backtracking import bt_search
 import util
 
+from itertools import product
 
 ##################################################################
 ### NQUEENS
@@ -28,12 +29,15 @@ def nQueens(n, model):
     cons = []
 
     if model == 'alldiff':
+        constructor_alldiff = AllDiffConstraint
+        constructor_neq = NeqConstraint
+        
         for qi in range(len(dom)):
             for qj in range(qi+1, len(dom)):
-                con1 = AllDiffConstraint("C(Q{},Q{})".format(qi+1,qj+1), [vars[qi], vars[qj]])
-                con2 = NeqConstraint("C(Q{},Q{})".format(qi+1,qj+1), [vars[qi], vars[qj]], qi+1, qj+1)
-                cons.append(con1)
-                cons.append(con2)
+                constraint_alldiff = constructor_alldiff("C(Q{},Q{})".format(qi+1,qj+1), [vars[qi], vars[qj]])
+                constraint_neq = constructor_neq("C(Q{},Q{})".format(qi+1,qj+1), [vars[qi], vars[qj]], qi+1, qj+1)
+                cons.append(constraint_alldiff)
+                cons.append(constraint_neq)
     else:
         constructor = QueensTableConstraint if model == 'table' else QueensConstraint
         for qi in range(len(dom)):
@@ -47,7 +51,7 @@ def nQueens(n, model):
 
 def solve_nQueens(n, algo, allsolns, model='row', variableHeuristic='fixed', trace=False):
     '''Create and solve an nQueens CSP problem. The first
-       parameer is 'n' the number of queens in the problem,
+       parameter is 'n' the number of queens in the problem,
        The second specifies the search algorithm to use (one
        of 'BT', 'FC', or 'GAC'), the third specifies if
        all solutions are to be found or just one, variableHeuristic
@@ -149,10 +153,94 @@ class ScheduleProblem:
     def connected_buildings(self, building):
         '''Return list of buildings that are connected from specified building'''
         return self._connected_buildings[building]
+    
+def get_class_info(class_section):
+  space_index = class_section.index(' ')
+  return class_section[:space_index], class_section[space_index + 1:]
 
+def check_schedule_solution(problem, schedule):
+  if len(schedule) == 0:
+    return False
+  tests = [check_valid_classes, 
+           check_consecutive_classes_buildings, check_taken_courses_once, 
+           check_resting]
+  
+  for test in tests:
+      if not test(problem, schedule):
+        return False
+
+  return True
+
+def check_valid_classes(problem, schedule):
+  for time_slot in schedule:
+    if time_slot == NOCLASS:
+      continue
+    if time_slot not in problem.classes:
+      print("Error solution invalid, non-existent class {} in the schedule".format(c))
+      return False
+  return True
+
+def check_consecutive_classes_buildings(problem, schedule):
+  for i, _ in enumerate(schedule):
+    if i + 1 == len(schedule) or schedule[i] == NOCLASS or schedule[i + 1] == NOCLASS:
+      continue
+    
+    building_1 = schedule[i].split('-')[1]
+    building_2 = schedule[i + 1].split('-')[1]
+    if building_2 not in problem.connected_buildings(building_1):
+      print("Error solution invalid, consecutive classes {}, {} in the schedule is too far apart".format(schedule[i], schedule[i + 1]))
+      return False
+
+  return True      
+
+def check_taken_courses_once(problem, schedule):
+  checklist = dict()
+  for course in problem.courses:
+    checklist[course] = [0, 0]
+
+  for class_1 in schedule:
+    if class_1 == NOCLASS:
+      continue
+    class_1_info = class_1.split('-')
+    if class_1_info[0] not in checklist:
+      print("Error solution invalid, class {} should not be taken by the student".format(course_1))
+      return False
+
+    if class_1_info[3] == LEC:
+      checklist[class_1_info[0]][0] += 1
+
+    if class_1_info[3] == TUT:
+      if checklist[class_1_info[0]][0] == 0:
+        print("Error solution invalid, tutorial for class {} should not be taken before lecture".format(class_1))
+        return False
+      checklist[class_1_info[0]][1] += 1
+
+    if any([val > 1 for val in checklist[class_1_info[0]]]):
+      print("Error solution invalid, class {} is taken more than once for some class type".format(class_1))
+      return False
+
+  for key in checklist:
+    if checklist[key][0] + checklist[key][1] < 2:
+      print("Error solution invalid, class {} is taken less than once for some class type".format(key))
+      return False
+  return True
+
+def check_resting(problem, schedule):
+  if len(schedule) < problem.min_rest_frequency:
+    return True
+  for i in range(len(schedule) - problem.min_rest_frequency + 1):
+    count = 0
+    for j in range(problem.min_rest_frequency):
+      if schedule[i + j] == NOCLASS:
+        count += 1
+    if count == 0:
+      print("Error solution invalid, student takes to many classes before resting")
+      return False
+  return True
 
 def solve_schedules(schedule_problem, algo, allsolns,
                  variableHeuristic='mrv', silent=False, trace=False):
+    
     #Your implementation for Question 6 goes here.
     #
     #Do not but do not change the functions signature
@@ -187,14 +275,37 @@ def solve_schedules(schedule_problem, algo, allsolns,
        In the case of all solutions, we will have a list of lists, where the inner
        element (a possible schedule) follows the format above.
     '''
-
-    #BUILD your CSP here and store it in the varable csp
-    util.raiseNotDefined()
-
-    #invoke search with the passed parameters
-    solutions, num_nodes = bt_search(algo, csp, variableHeuristic, allsolns, trace)
-
-    #Convert each solution into a list of lists specifying a schedule
-    #for each student in the format described above.
-
-    #then return a list containing all converted solutions
+    
+    # Initialization:
+    k = schedule_problem.num_time_slots
+    scopeList = [['NOCLASS'] for i in range(k)]
+    
+    # Looping through classes:
+    for classItem in schedule_problem.classes:
+        scopeList[int(classItem.split('-')[2]) - 1].append(classItem)
+        
+    # Initializing constraints list, schedule solution list, and defining variableList:
+    variableList = [Variable(j, scopeList[j]) for j in range(k)]
+    courseList = list(product(*scopeList))
+    courseList = [list(item) for item in courseList]
+    constraints = []
+    scheduleSolutionList = []
+    
+    # Iterating through course list for potential solutions:
+    for solutionItem in courseList:
+        if check_schedule_solution(schedule_problem, solutionItem):
+            constraints.append(solutionItem)
+    
+    # Defining additional constraints and calling the CSP solver:
+    constraints = TableConstraint('all_constraints', variableList, constraints)
+    csp = CSP('Solver', variableList, [constraints])
+    
+    # Calling bt_search:
+    solutions, num_nodes = bt_search(algo, csp, variableHeuristic, True, trace)
+    
+    # Appending solutions to schedule list:
+    for solution in solutions:
+        solutionClassList = [j[1] for j in solution]
+        scheduleSolutionList.append(solutionClassList)
+    
+    return scheduleSolutionList
